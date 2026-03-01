@@ -24,34 +24,92 @@ export interface ChatActions {
 
 function Landing({ onStart }: { onStart: () => void }) {
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20">
+    <div className="relative flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20 overflow-hidden">
+      
+      {/* Background Particles */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div 
+          className="absolute w-64 h-64 rounded-full bg-white blur-3xl"
+          style={{ 
+            top: '20%', left: '15%', opacity: 0.03,
+            animation: 'particle-drift 20s ease-in-out infinite alternate' 
+          }}
+        />
+        <div 
+          className="absolute w-96 h-96 rounded-full bg-white blur-3xl"
+          style={{ 
+            bottom: '10%', right: '20%', opacity: 0.04,
+            animation: 'particle-drift 25s ease-in-out infinite alternate-reverse',
+            animationDelay: '-5s'
+          }}
+        />
+        <div 
+          className="absolute w-48 h-48 rounded-full bg-white blur-3xl"
+          style={{ 
+            top: '40%', right: '10%', opacity: 0.02,
+            animation: 'particle-drift 18s ease-in-out infinite alternate',
+            animationDelay: '-10s'
+          }}
+        />
+      </div>
 
       {/* Top Left Logo */}
-      <div className="absolute top-6 left-8 font-light tracking-widest text-sm text-white/80">
+      <div className="absolute top-6 left-8 font-light tracking-widest text-sm text-white/80 z-10">
         drift
       </div>
 
       {/* Center Content */}
-      <div className="flex flex-col items-center text-center">
-        <h1 className="text-8xl font-thin tracking-[0.3em] text-white ml-[0.3em]">drift</h1>
+      <div className="flex flex-col items-center text-center z-10">
+        <h1 
+          className="text-8xl font-thin tracking-[0.3em] text-white ml-[0.3em]"
+          style={{ 
+            animation: 'fade-in-up 1.2s ease-out forwards, drift-float 8s ease-in-out infinite',
+            opacity: 0
+          }}
+        >
+          drift
+        </h1>
 
-        <div className="w-16 h-px bg-white/20 mx-auto my-6"></div>
+        <div 
+          className="w-16 h-px bg-white/20 mx-auto my-6 origin-center"
+          style={{
+            animation: 'scale-x-in 0.8s ease-out forwards',
+            animationDelay: '0.4s',
+            transform: 'scaleX(0)'
+          }}
+        ></div>
 
-        <div className="text-base text-white/40 font-light tracking-wide leading-relaxed">
+        <div 
+          className="text-base text-white/40 font-light tracking-wide leading-relaxed"
+          style={{
+            animation: 'fade-in 1s ease-out forwards',
+            animationDelay: '0.8s',
+            opacity: 0
+          }}
+        >
           one conversation.<br/>then gone.
         </div>
 
         {/* Features */}
         <div className="mt-12 flex flex-col items-start gap-3">
-          <div className="flex items-center gap-4">
+          <div 
+            className="flex items-center gap-4"
+            style={{ animation: 'slide-in-right 0.6s ease-out forwards', animationDelay: '1.0s', opacity: 0, transform: 'translateX(-10px)' }}
+          >
             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
             <span className="text-sm text-white/30 font-light">matched by language</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div 
+            className="flex items-center gap-4"
+            style={{ animation: 'slide-in-right 0.6s ease-out forwards', animationDelay: '1.1s', opacity: 0, transform: 'translateX(-10px)' }}
+          >
             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
             <span className="text-sm text-white/30 font-light">zero accounts, zero history</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div 
+            className="flex items-center gap-4"
+            style={{ animation: 'slide-in-right 0.6s ease-out forwards', animationDelay: '1.2s', opacity: 0, transform: 'translateX(-10px)' }}
+          >
             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
             <span className="text-sm text-white/30 font-light">close tab = it never happened</span>
           </div>
@@ -61,17 +119,29 @@ function Landing({ onStart }: { onStart: () => void }) {
         <button
           onClick={onStart}
           className="mt-12 px-10 py-3 text-sm tracking-widest uppercase border border-white text-white hover:bg-white hover:text-[#0a0a0a] transition-colors duration-300"
+          style={{
+            animation: 'fade-in 1s ease-out forwards',
+            animationDelay: '1.4s',
+            opacity: 0
+          }}
         >
           start drifting
         </button>
 
-        <div className="text-xs text-white/20 mt-4 font-light">
+        <div 
+          className="text-xs text-white/20 mt-4 font-light"
+          style={{
+            animation: 'fade-in 1s ease-out forwards',
+            animationDelay: '1.6s',
+            opacity: 0
+          }}
+        >
           somewhere out there, a stranger is waiting.
         </div>
       </div>
 
       {/* Bottom Right Version */}
-      <div className="absolute bottom-6 right-8 text-xs text-white/10 font-light">
+      <div className="absolute bottom-6 right-8 text-xs text-white/10 font-light z-10">
         v0.1
       </div>
     </div>

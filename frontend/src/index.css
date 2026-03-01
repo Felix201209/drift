@@ -25,3 +25,58 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Drift Animation Keyframes */
+@keyframes drift-float {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  25% { transform: translateY(-8px) translateX(2px); }
+  50% { transform: translateY(-4px) translateX(-2px); }
+  75% { transform: translateY(8px) translateX(1px); }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-x-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes particle-drift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.03; }
+  33% { transform: translate(30px, -50px) scale(1.2); opacity: 0.05; }
+  66% { transform: translate(-20px, -20px) scale(0.8); opacity: 0.02; }
+  100% { transform: translate(0, 0) scale(1); opacity: 0.03; }
+}
