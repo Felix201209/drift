@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { LangCode } from '../languages';
 
-type Status = 'landing' | 'selecting_language' | 'waiting' | 'chatting' | 'disconnected';
+type Status = 'landing' | 'selecting_language' | 'waiting' | 'chatting' | 'disconnected' | 'waking_up';
 
 interface Message {
   id: string;
@@ -68,8 +68,46 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
     localStorage.setItem('drift_lang', lang);
   }, []);
 
-  const startDrifting = useCallback(() => {
-    // Check if language was previously saved
+  const startDrifting = useCallback(async () => {
+    // Health check before starting - detect if backend is waking up
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+    const healthUrl = `${SOCKET_URL}/health`;
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    try {
+      const response = await fetch(healthUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!response.ok) throw new Error('Health check failed');
+    } catch {
+      // Health check failed or timed out - backend is likely waking up
+      setState(prev => ({ ...prev, status: 'waking_up' }));
+      
+      // Poll until backend is ready
+      const pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(healthUrl);
+          if (res.ok) {
+            clearInterval(pollInterval);
+            // Backend is ready, proceed to normal flow
+            const savedLang = localStorage.getItem('drift_lang') as LangCode | null;
+            if (savedLang) {
+              setState(prev => ({ ...prev, status: 'waiting', language: savedLang }));
+            } else {
+              setState(prev => ({ ...prev, status: 'selecting_language' }));
+            }
+          }
+        } catch {
+          // Still waking up, continue polling
+        }
+      }, 2000);
+      
+      // Cleanup polling on unmount
+      return () => clearInterval(pollInterval);
+    }
+    
+    // Health check passed quickly - proceed normally
     const savedLang = localStorage.getItem('drift_lang') as LangCode | null;
     if (savedLang) {
       setState(prev => ({ ...prev, language: savedLang }));

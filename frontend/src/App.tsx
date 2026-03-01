@@ -5,7 +5,7 @@ import { LANGUAGES } from './languages';
 import type { LangCode } from './languages';
 
 export interface ChatState {
-  status: 'landing' | 'selecting_language' | 'waiting' | 'chatting' | 'disconnected';
+  status: 'landing' | 'selecting_language' | 'waiting' | 'chatting' | 'disconnected' | 'waking_up';
   language: LangCode | null;
   messages: Array<{ id: string; text: string; from: 'me' | 'them'; ts: number }>;
   isPartnerTyping: boolean;
@@ -67,6 +67,41 @@ function Landing({ onStart }: { onStart: () => void }) {
 
         <div className="text-xs text-white/20 mt-4 font-light">
           somewhere out there, a stranger is waiting.
+        </div>
+      </div>
+
+      {/* Bottom Right Version */}
+      <div className="absolute bottom-6 right-8 text-xs text-white/10 font-light">
+        v0.1
+      </div>
+    </div>
+  );
+}
+
+function WakingUp() {
+  return (
+    <div className="relative flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20">
+      {/* Top Left Logo */}
+      <div className="absolute top-6 left-8 font-light tracking-widest text-sm text-white/80">
+        drift
+      </div>
+
+      {/* Center Content */}
+      <div className="flex flex-col items-center text-center">
+        {/* Pulse Animation */}
+        <div className="relative">
+          <div className="w-3 h-3 bg-white/60 rounded-full animate-pulse"></div>
+          <div className="absolute inset-0 w-3 h-3 bg-white/30 rounded-full animate-ping"></div>
+        </div>
+
+        {/* Text */}
+        <div className="mt-8">
+          <p className="text-white/40 font-light tracking-wide">
+            waking up...
+          </p>
+          <p className="text-xs text-white/20 font-light mt-2">
+            free servers sleep when idle · just a moment
+          </p>
         </div>
       </div>
 
@@ -373,6 +408,8 @@ export default function App() {
   switch (state.status) {
     case 'landing':
       return <Landing onStart={actions.startDrifting} />;
+    case 'waking_up':
+      return <WakingUp />;
     case 'selecting_language':
       return (
         <LanguageSelection
