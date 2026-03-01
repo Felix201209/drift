@@ -186,7 +186,8 @@ io.on('connection', (socket) => {
 });
 
 // ─── Health check ─────────────────────────────────────────────────────────────
-app.get('/health', (_req, res) => {
+import type { Request, Response } from 'express';
+app.get('/health', (_req: Request, res: Response) => {
   res.json({
     ok: true,
     waiting: waitingQueue.length,
