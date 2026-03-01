@@ -117,6 +117,9 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
   const joinQueue = useCallback(() => {
     if (!state.language) return;
 
+    // Optimistic update: show waiting UI immediately
+    setState(prev => ({ ...prev, status: 'waiting', queuePosition: null }));
+
     // Create socket connection on demand
     if (!socketRef.current) {
       const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
@@ -178,8 +181,6 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
     if (!socket.connected) {
       socket.connect();
     }
-    // Set waiting status immediately so UI updates
-    setState(prev => ({ ...prev, status: 'waiting' }));
     socket.emit('join_queue', { language: state.language });
   }, [state.language]);
 
