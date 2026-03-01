@@ -5,16 +5,20 @@ import { LANGUAGES } from './languages';
 import type { LangCode } from './languages';
 
 // ─── Fade wrapper ─────────────────────────────────────────────────────────────
-function FadeIn({ children, key: _ }: { children: React.ReactNode; key?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
+function FadeIn({ children }: { children: React.ReactNode }) {
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.opacity = '0';
-    el.style.transition = 'opacity 0.35s ease';
-    requestAnimationFrame(() => { el.style.opacity = '1'; });
+    const t = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(t);
   }, []);
-  return <div ref={ref}>{children}</div>;
+  return (
+    <div 
+      className="transition-opacity duration-300 ease-out"
+      style={{ opacity: visible ? 1 : 0 }}
+    >
+      {children}
+    </div>
+  );
 }
 
 export interface ChatState {
