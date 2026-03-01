@@ -6,19 +6,7 @@ import type { LangCode } from './languages';
 
 // ─── Fade wrapper ─────────────────────────────────────────────────────────────
 function FadeIn({ children }: { children: React.ReactNode }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 10);
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <div 
-      className="transition-opacity duration-300 ease-out"
-      style={{ opacity: visible ? 1 : 0 }}
-    >
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
 
 export interface ChatState {
