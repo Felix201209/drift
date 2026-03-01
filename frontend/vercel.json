@@ -1,6 +1,3 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
-  "env": {
-    "VITE_SOCKET_URL": "@drift-socket-url"
-  }
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

@@ -5,12 +5,17 @@ import cors from 'cors';
 
 const app = express();
 
+// CORS: support env-configured origin for production (e.g. Vercel domain)
 const corsOrigins: (string | RegExp)[] = [
   'http://localhost:5173',
   'http://localhost:5174',
   /\.vercel\.app$/,
   /\.railway\.app$/,
+  /\.onrender\.com$/,
 ];
+if (process.env.CORS_ORIGIN) {
+  corsOrigins.push(process.env.CORS_ORIGIN);
+}
 
 app.use(cors({ origin: corsOrigins, credentials: true }));
 
@@ -62,6 +67,23 @@ function isRateLimited(map: Map<string, number[]>, ip: string, limit: number): b
 const waitingQueue: WaitingUser[] = [];    // users waiting for match
 const rooms = new Map<string, Room>();      // roomId → Room
 const socketToRoom = new Map<string, string>(); // socketId → roomId
+
+// ─── Queue Cleanup: remove stale waiting users every 30s ──────────────────────
+const QUEUE_TIMEOUT_MS = 30_000;
+setInterval(() => {
+  const now = Date.now();
+  const before = waitingQueue.length;
+  for (let i = waitingQueue.length - 1; i >= 0; i--) {
+    const u = waitingQueue[i];
+    const sock = io.sockets.sockets.get(u.socketId);
+    if (!sock || !sock.connected || now - u.joinedAt > QUEUE_TIMEOUT_MS) {
+      waitingQueue.splice(i, 1);
+    }
+  }
+  if (waitingQueue.length !== before) {
+    console.log(`[QUEUE] cleanup: ${before} → ${waitingQueue.length}`);
+  }
+}, 30_000);
 
 // ─── Matching Logic ───────────────────────────────────────────────────────────
 function findMatch(socketId: string, language: Language): WaitingUser | null {
@@ -175,4 +197,22 @@ app.get('/health', (_req, res) => {
 });
 
 const PORT = process.env.PORT || 3002;
-httpServer.listen(PORT, () => console.log(`[Drift] Server running on :${PORT}`));
+const server = httpServer.listen(PORT, () => console.log(`[Drift] Server running on :${PORT}`));
+
+// ─── Graceful Shutdown ────────────────────────────────────────────────────────
+function shutdown(signal: string) {
+  console.log(`[Drift] ${signal} received — shutting down gracefully`);
+  // Notify all connected users before closing
+  io.emit('partner_left');
+  io.close(() => {
+    server.close(() => {
+      console.log('[Drift] Server closed');
+      process.exit(0);
+    });
+  });
+  // Force exit after 10s if connections linger
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
