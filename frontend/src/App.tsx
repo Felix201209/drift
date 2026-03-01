@@ -19,12 +19,13 @@ export interface ChatActions {
   setTyping: (isTyping: boolean) => void;
   leaveRoom: () => void;
   resetToLanding: () => void;
+  changeLanguage: () => void;
 }
 
 function Landing({ onStart }: { onStart: () => void }) {
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-white selection:bg-white/20">
-      
+    <div className="relative flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20">
+
       {/* Top Left Logo */}
       <div className="absolute top-6 left-8 font-light tracking-widest text-sm text-white/80">
         drift
@@ -33,9 +34,9 @@ function Landing({ onStart }: { onStart: () => void }) {
       {/* Center Content */}
       <div className="flex flex-col items-center text-center">
         <h1 className="text-8xl font-thin tracking-[0.3em] text-white ml-[0.3em]">drift</h1>
-        
+
         <div className="w-16 h-px bg-white/20 mx-auto my-6"></div>
-        
+
         <div className="text-base text-white/40 font-light tracking-wide leading-relaxed">
           one conversation.<br/>then gone.
         </div>
@@ -57,7 +58,7 @@ function Landing({ onStart }: { onStart: () => void }) {
         </div>
 
         {/* Action */}
-        <button 
+        <button
           onClick={onStart}
           className="mt-12 px-10 py-3 text-sm tracking-widest uppercase border border-white text-white hover:bg-white hover:text-[#0a0a0a] transition-colors duration-300"
         >
@@ -77,19 +78,21 @@ function Landing({ onStart }: { onStart: () => void }) {
   );
 }
 
-function LanguageSelection({ 
-  selectedLang, 
-  onSelect, 
-  onNext 
-}: { 
-  selectedLang: LangCode | null, 
+function LanguageSelection({
+  selectedLang,
+  onSelect,
+  onNext,
+  showChangeHint
+}: {
+  selectedLang: LangCode | null,
   onSelect: (l: LangCode) => void,
-  onNext: () => void
+  onNext: () => void,
+  showChangeHint?: boolean
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-white p-6 selection:bg-white/20">
+    <div className="flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white p-6 selection:bg-white/20">
       <h2 className="text-2xl font-light tracking-wide mb-12">choose your language</h2>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-3xl mb-16">
         {LANGUAGES.map((lang) => {
           const isSelected = selectedLang === lang.code;
@@ -98,8 +101,8 @@ function LanguageSelection({
               key={lang.code}
               onClick={() => onSelect(lang.code)}
               className={`flex flex-col items-start p-4 rounded-lg border transition-all duration-200 ${
-                isSelected 
-                  ? 'border-white/60 bg-white/5' 
+                isSelected
+                  ? 'border-white/60 bg-white/5'
                   : 'border-white/10 hover:border-white/30'
               }`}
             >
@@ -110,27 +113,36 @@ function LanguageSelection({
         })}
       </div>
 
-      <button 
+      <button
         onClick={onNext}
         disabled={!selectedLang}
         className={`flex items-center gap-2 text-sm tracking-widest uppercase transition-all duration-300 ${
-          selectedLang 
-            ? 'text-white hover:text-white/70 cursor-pointer' 
+          selectedLang
+            ? 'text-white hover:text-white/70 cursor-pointer'
             : 'text-white/20 cursor-not-allowed'
         }`}
       >
         <span>continue &rarr;</span>
       </button>
+
+      {showChangeHint && (
+        <p className="mt-6 text-xs text-white/20 font-light">
+          your previous choice was saved. <span className="text-white/40">change language below if needed.</span>
+        </p>
+      )}
     </div>
   );
 }
 
-function Waiting({ 
-  onCancel 
-}: { 
-  onCancel: () => void 
+function Waiting({
+  onCancel,
+  language
+}: {
+  onCancel: () => void;
+  language: LangCode | null;
 }) {
   const [msgIndex, setMsgIndex] = useState(0);
+  const [queueCount, setQueueCount] = useState<number | null>(null);
 
   const messages = [
     "finding your match...",
@@ -146,23 +158,50 @@ function Waiting({
     return () => clearInterval(interval);
   }, [messages.length]);
 
+  // Poll queue count
+  useEffect(() => {
+    const fetchQueueCount = async () => {
+      try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        if (data.queueByLanguage && language) {
+          setQueueCount(data.queueByLanguage[language] || 0);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+    fetchQueueCount();
+    const interval = setInterval(fetchQueueCount, 5000);
+    return () => clearInterval(interval);
+  }, [language]);
+
+  const langLabel = LANGUAGES.find(l => l.code === language)?.label || language;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-white selection:bg-white/20">
+    <div className="flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20">
       <div className="flex-1 flex flex-col items-center justify-center">
         {/* Spinner */}
         <div className="w-[60px] h-[60px] rounded-full border border-white/10 border-t-white animate-spin"></div>
-        
+
         {/* Text */}
         <div className="h-6 mt-8">
           <p className="text-sm text-white/50 font-light transition-opacity duration-500">
             {messages[msgIndex]}
           </p>
         </div>
+
+        {/* Queue count - subtle */}
+        <div className="h-4 mt-3">
+          <p className="text-xs text-white/20 font-light">
+            {queueCount === null ? '' : queueCount === 0 ? `no one waiting in ${langLabel} yet` : `${queueCount} other waiting`}
+          </p>
+        </div>
       </div>
 
       {/* Cancel Button */}
       <div className="pb-12">
-        <button 
+        <button
           onClick={onCancel}
           className="text-xs text-white/20 hover:text-white/50 transition-colors tracking-widest uppercase"
         >
@@ -173,15 +212,16 @@ function Waiting({
   );
 }
 
-function Chatting({ 
-  state, 
-  actions 
-}: { 
-  state: ChatState, 
-  actions: ChatActions 
+function Chatting({
+  state,
+  actions
+}: {
+  state: ChatState,
+  actions: ChatActions
 }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -191,6 +231,10 @@ function Chatting({
     if (!input.trim()) return;
     actions.sendMessage(input);
     setInput('');
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -203,12 +247,16 @@ function Chatting({
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     actions.setTyping(e.target.value.length > 0);
+
+    // Auto-resize textarea
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
   };
 
   const langObj = LANGUAGES.find(l => l.code === state.language) || LANGUAGES[0];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0a0a] text-white selection:bg-white/20 font-light">
+    <div className="flex flex-col h-dvh bg-[#0a0a0a] text-white selection:bg-white/20 font-light">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-14 bg-[#0a0a0a]/90 backdrop-blur-sm z-10 flex items-center justify-between px-6 border-b border-white/5">
         <div className="flex items-center gap-4">
@@ -216,8 +264,8 @@ function Chatting({
           <span className="w-px h-3 bg-white/10"></span>
           <span className="text-xs text-white/30 uppercase tracking-wider">{langObj.label}</span>
         </div>
-        
-        <button 
+
+        <button
           onClick={actions.leaveRoom}
           className="text-xs text-white/20 hover:text-red-400 tracking-widest uppercase transition-colors"
         >
@@ -232,10 +280,10 @@ function Chatting({
           const isMe = msg.from === 'me';
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-              <div 
+              <div
                 className={`px-4 py-2 max-w-xs md:max-w-md whitespace-pre-wrap break-words text-sm leading-relaxed ${
-                  isMe 
-                    ? 'bg-white text-black rounded-2xl rounded-tr-sm' 
+                  isMe
+                    ? 'bg-white text-black rounded-2xl rounded-tr-sm'
                     : 'bg-white/8 text-white rounded-2xl rounded-tl-sm'
                 }`}
               >
@@ -244,7 +292,7 @@ function Chatting({
             </div>
           );
         })}
-        
+
         {state.isPartnerTyping && (
           <div className="flex justify-start">
             <div className="flex gap-1.5 items-center px-4 py-3 h-10">
@@ -261,14 +309,15 @@ function Chatting({
       <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/5 p-4 z-10">
         <div className="max-w-4xl mx-auto flex items-end gap-4">
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="type something..."
             rows={1}
-            className="flex-1 bg-transparent text-white placeholder-white/20 text-sm resize-none outline-none py-2 max-h-32"
+            className="flex-1 bg-transparent text-white placeholder-white/20 text-sm resize-none outline-none py-2 min-h-[24px] max-h-32"
           />
-          <button 
+          <button
             onClick={handleSend}
             disabled={!input.trim()}
             className="pb-2 text-white/30 hover:text-white disabled:opacity-50 transition-colors cursor-pointer disabled:cursor-not-allowed"
@@ -281,28 +330,39 @@ function Chatting({
   );
 }
 
-function Disconnected({ onReset, onHome }: { onReset: () => void, onHome: () => void }) {
+function Disconnected({ onReset, onHome, onChangeLanguage }: { onReset: () => void, onHome: () => void, onChangeLanguage: () => void }) {
+  const hasSavedLang = localStorage.getItem('drift_lang') !== null;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-white selection:bg-white/20">
+    <div className="flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20">
       <div className="text-center mb-10">
         <h2 className="text-4xl font-thin text-white/60 mb-3">they drifted away.</h2>
         <p className="text-sm text-white/30 font-light">that conversation is gone forever.</p>
       </div>
-      
+
       <div className="flex items-center gap-8 mt-10">
-        <button 
+        <button
           onClick={onReset}
           className="px-8 py-3 border border-white text-sm tracking-widest uppercase hover:bg-white hover:text-black transition-colors"
         >
           drift again
         </button>
-        <button 
+        <button
           onClick={onHome}
           className="text-sm text-white/20 hover:text-white/60 tracking-widest uppercase transition-colors"
         >
           go home
         </button>
       </div>
+
+      {hasSavedLang && (
+        <button
+          onClick={onChangeLanguage}
+          className="mt-8 text-xs text-white/20 hover:text-white/40 tracking-widest uppercase transition-colors"
+        >
+          change language
+        </button>
+      )}
     </div>
   );
 }
@@ -315,25 +375,28 @@ export default function App() {
       return <Landing onStart={actions.startDrifting} />;
     case 'selecting_language':
       return (
-        <LanguageSelection 
+        <LanguageSelection
           selectedLang={state.language}
           onSelect={actions.selectLanguage}
           onNext={actions.joinQueue}
+          showChangeHint={localStorage.getItem('drift_lang') !== null}
         />
       );
     case 'waiting':
       return (
-        <Waiting 
+        <Waiting
           onCancel={actions.startDrifting}
+          language={state.language}
         />
       );
     case 'chatting':
       return <Chatting state={state} actions={actions} />;
     case 'disconnected':
       return (
-        <Disconnected 
+        <Disconnected
           onReset={actions.startDrifting}
           onHome={actions.resetToLanding}
+          onChangeLanguage={actions.changeLanguage}
         />
       );
     default:

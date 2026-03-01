@@ -28,6 +28,7 @@ interface ChatActions {
   setTyping: (isTyping: boolean) => void;
   leaveRoom: () => void;
   resetToLanding: () => void;
+  changeLanguage: () => void;
 }
 
 export function useSocket(): { state: ChatState; actions: ChatActions } {
@@ -55,12 +56,27 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
     };
   }, []);
 
+  // Auto-join queue when language is set but status is still landing (from localStorage)
+  useEffect(() => {
+    if (state.language && state.status === 'landing') {
+      joinQueue();
+    }
+  }, [state.language, state.status]);
+
   const selectLanguage = useCallback((lang: LangCode) => {
     setState(prev => ({ ...prev, language: lang }));
+    localStorage.setItem('drift_lang', lang);
   }, []);
 
   const startDrifting = useCallback(() => {
-    setState(prev => ({ ...prev, status: 'selecting_language' }));
+    // Check if language was previously saved
+    const savedLang = localStorage.getItem('drift_lang') as LangCode | null;
+    if (savedLang) {
+      setState(prev => ({ ...prev, language: savedLang }));
+      // Will trigger joinQueue via useEffect when language changes
+    } else {
+      setState(prev => ({ ...prev, status: 'selecting_language' }));
+    }
   }, []);
 
   const joinQueue = useCallback(() => {
@@ -194,6 +210,11 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
     });
   }, []);
 
+  const changeLanguage = useCallback(() => {
+    localStorage.removeItem('drift_lang');
+    setState(prev => ({ ...prev, language: null, status: 'selecting_language' }));
+  }, []);
+
   const actions: ChatActions = {
     startDrifting,
     selectLanguage,
@@ -202,6 +223,7 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
     setTyping,
     leaveRoom,
     resetToLanding,
+    changeLanguage,
   };
 
   return { state, actions };
