@@ -63,6 +63,23 @@ const waitingQueue: WaitingUser[] = [];    // users waiting for match
 const rooms = new Map<string, Room>();      // roomId → Room
 const socketToRoom = new Map<string, string>(); // socketId → roomId
 
+// ─── Queue Cleanup: remove stale waiting users every 30s ──────────────────────
+const QUEUE_TIMEOUT_MS = 30_000;
+setInterval(() => {
+  const now = Date.now();
+  const before = waitingQueue.length;
+  for (let i = waitingQueue.length - 1; i >= 0; i--) {
+    const u = waitingQueue[i];
+    const sock = io.sockets.sockets.get(u.socketId);
+    if (!sock || !sock.connected || now - u.joinedAt > QUEUE_TIMEOUT_MS) {
+      waitingQueue.splice(i, 1);
+    }
+  }
+  if (waitingQueue.length !== before) {
+    console.log(`[QUEUE] cleanup: ${before} → ${waitingQueue.length}`);
+  }
+}, 30_000);
+
 // ─── Matching Logic ───────────────────────────────────────────────────────────
 function findMatch(socketId: string, language: Language): WaitingUser | null {
   const idx = waitingQueue.findIndex(u =>

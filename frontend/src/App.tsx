@@ -4,6 +4,19 @@ import { useSocket } from './hooks/useSocket';
 import { LANGUAGES } from './languages';
 import type { LangCode } from './languages';
 
+// ─── Fade wrapper ─────────────────────────────────────────────────────────────
+function FadeIn({ children, key: _ }: { children: React.ReactNode; key?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.35s ease';
+    requestAnimationFrame(() => { el.style.opacity = '1'; });
+  }, []);
+  return <div ref={ref}>{children}</div>;
+}
+
 export interface ChatState {
   status: 'landing' | 'selecting_language' | 'waiting' | 'chatting' | 'disconnected' | 'waking_up';
   language: LangCode | null;
@@ -478,34 +491,40 @@ export default function App() {
 
   switch (state.status) {
     case 'landing':
-      return <Landing onStart={actions.startDrifting} />;
+      return <FadeIn key="landing"><Landing onStart={actions.startDrifting} /></FadeIn>;
     case 'waking_up':
-      return <WakingUp />;
+      return <FadeIn key="waking"><WakingUp /></FadeIn>;
     case 'selecting_language':
       return (
-        <LanguageSelection
-          selectedLang={state.language}
-          onSelect={actions.selectLanguage}
-          onNext={actions.joinQueue}
-          showChangeHint={localStorage.getItem('drift_lang') !== null}
-        />
+        <FadeIn key="lang">
+          <LanguageSelection
+            selectedLang={state.language}
+            onSelect={actions.selectLanguage}
+            onNext={actions.joinQueue}
+            showChangeHint={localStorage.getItem('drift_lang') !== null}
+          />
+        </FadeIn>
       );
     case 'waiting':
       return (
-        <Waiting
-          onCancel={actions.startDrifting}
-          language={state.language}
-        />
+        <FadeIn key="waiting">
+          <Waiting
+            onCancel={actions.startDrifting}
+            language={state.language}
+          />
+        </FadeIn>
       );
     case 'chatting':
-      return <Chatting state={state} actions={actions} />;
+      return <FadeIn key="chat"><Chatting state={state} actions={actions} /></FadeIn>;
     case 'disconnected':
       return (
-        <Disconnected
-          onReset={actions.startDrifting}
-          onHome={actions.resetToLanding}
-          onChangeLanguage={actions.changeLanguage}
-        />
+        <FadeIn key="dc">
+          <Disconnected
+            onReset={actions.startDrifting}
+            onHome={actions.resetToLanding}
+            onChangeLanguage={actions.changeLanguage}
+          />
+        </FadeIn>
       );
     default:
       return null;
