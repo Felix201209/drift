@@ -71,6 +71,7 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
   const startDrifting = useCallback(async () => {
     // Health check before starting - detect if backend is waking up
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+    console.log('[Drift] SOCKET_URL:', SOCKET_URL, 'VITE_SOCKET_URL:', import.meta.env.VITE_SOCKET_URL);
     const healthUrl = `${SOCKET_URL}/health`;
     
     const controller = new AbortController();
@@ -119,6 +120,7 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
     // Create socket connection on demand
     if (!socketRef.current) {
       const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+      console.log('[Drift Client] Socket connecting to:', SOCKET_URL, 'env:', import.meta.env);
       socketRef.current = io(SOCKET_URL, {
         autoConnect: false,
       });
