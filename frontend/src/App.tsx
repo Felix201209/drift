@@ -63,8 +63,9 @@ function Landing({ onStart }: { onStart: () => void }) {
         <h1 
           className="text-8xl font-thin tracking-[0.3em] text-white ml-[0.3em]"
           style={{ 
-            animation: 'fade-in-up 1.2s ease-out forwards, drift-float 8s ease-in-out infinite',
-            opacity: 0
+            animation: 'fade-in-up 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards, drift-float 12s ease-in-out infinite 1.8s',
+            opacity: 0,
+            willChange: 'transform, opacity, filter'
           }}
         >
           drift
@@ -73,7 +74,7 @@ function Landing({ onStart }: { onStart: () => void }) {
         <div 
           className="w-16 h-px bg-white/20 mx-auto my-6 origin-center"
           style={{
-            animation: 'scale-x-in 0.8s ease-out forwards',
+            animation: 'scale-x-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
             animationDelay: '0.4s',
             transform: 'scaleX(0)'
           }}
@@ -82,7 +83,7 @@ function Landing({ onStart }: { onStart: () => void }) {
         <div 
           className="text-base text-white/40 font-light tracking-wide leading-relaxed"
           style={{
-            animation: 'fade-in 1s ease-out forwards',
+            animation: 'fade-in 1.2s ease-out forwards',
             animationDelay: '0.8s',
             opacity: 0
           }}
@@ -94,21 +95,21 @@ function Landing({ onStart }: { onStart: () => void }) {
         <div className="mt-12 flex flex-col items-start gap-3">
           <div 
             className="flex items-center gap-4"
-            style={{ animation: 'slide-in-right 0.6s ease-out forwards', animationDelay: '1.0s', opacity: 0, transform: 'translateX(-10px)' }}
+            style={{ animation: 'slide-in-right 0.8s ease-out forwards', animationDelay: '1.2s', opacity: 0, transform: 'translateX(-10px)' }}
           >
             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
             <span className="text-sm text-white/30 font-light">matched by language</span>
           </div>
           <div 
             className="flex items-center gap-4"
-            style={{ animation: 'slide-in-right 0.6s ease-out forwards', animationDelay: '1.1s', opacity: 0, transform: 'translateX(-10px)' }}
+            style={{ animation: 'slide-in-right 0.8s ease-out forwards', animationDelay: '1.3s', opacity: 0, transform: 'translateX(-10px)' }}
           >
             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
             <span className="text-sm text-white/30 font-light">zero accounts, zero history</span>
           </div>
           <div 
             className="flex items-center gap-4"
-            style={{ animation: 'slide-in-right 0.6s ease-out forwards', animationDelay: '1.2s', opacity: 0, transform: 'translateX(-10px)' }}
+            style={{ animation: 'slide-in-right 0.8s ease-out forwards', animationDelay: '1.4s', opacity: 0, transform: 'translateX(-10px)' }}
           >
             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
             <span className="text-sm text-white/30 font-light">close tab = it never happened</span>
@@ -121,7 +122,7 @@ function Landing({ onStart }: { onStart: () => void }) {
           className="mt-12 px-10 py-3 text-sm tracking-widest uppercase border border-white text-white hover:bg-white hover:text-[#0a0a0a] transition-colors duration-300"
           style={{
             animation: 'fade-in 1s ease-out forwards',
-            animationDelay: '1.4s',
+            animationDelay: '1.8s',
             opacity: 0
           }}
         >
@@ -132,7 +133,7 @@ function Landing({ onStart }: { onStart: () => void }) {
           className="text-xs text-white/20 mt-4 font-light"
           style={{
             animation: 'fade-in 1s ease-out forwards',
-            animationDelay: '1.6s',
+            animationDelay: '2.0s',
             opacity: 0
           }}
         >
