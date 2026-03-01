@@ -90,13 +90,9 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
           const res = await fetch(healthUrl);
           if (res.ok) {
             clearInterval(pollInterval);
-            // Backend is ready, proceed to normal flow
-            const savedLang = localStorage.getItem('drift_lang') as LangCode | null;
-            if (savedLang) {
-              setState(prev => ({ ...prev, status: 'waiting', language: savedLang }));
-            } else {
-              setState(prev => ({ ...prev, status: 'selecting_language' }));
-            }
+            // Backend is ready, always go to language selection
+            // savedLang only used for pre-selection, not skipping
+            setState(prev => ({ ...prev, status: 'selecting_language' }));
           }
         } catch {
           // Still waking up, continue polling
