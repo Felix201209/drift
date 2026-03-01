@@ -4,7 +4,7 @@
 
 A minimalist anonymous chat app. Two strangers, matched by language. When you close the tab — it never happened.
 
-Built by **[Felix](https://github.com/Felix201209)**.
+Built by **[Felix (Yu Pengzheng)](https://github.com/Felix201209)**.
 
 ---
 
