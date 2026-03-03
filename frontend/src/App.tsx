@@ -343,9 +343,12 @@ function Chatting({
     if (!input.trim()) return;
     actions.sendMessage(input);
     setInput('');
+    // Force reset textarea height and value display
     if (textareaRef.current) {
+      textareaRef.current.value = '';
       textareaRef.current.style.height = 'auto';
     }
+    actions.setTyping(false);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -400,11 +403,9 @@ function Chatting({
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-28 flex flex-col">
-        <div className="flex-1 min-h-8"></div>
-
+      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-28">
         {state.messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <div className="flex flex-col items-center justify-center py-16 gap-3" style={{ marginTop: 'calc(50vh - 140px)' }}>
             <div className="w-8 h-px bg-white/10"></div>
             <p className="text-xs text-white/20 font-light tracking-wider">you're connected · say something</p>
             <div className="w-8 h-px bg-white/10"></div>
