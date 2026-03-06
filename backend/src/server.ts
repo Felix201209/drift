@@ -4,8 +4,11 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 
 const app = express();
+const isProd = process.env.NODE_ENV === 'production';
+const log = isProd
+  ? (..._args: unknown[]) => {}
+  : (...args: unknown[]) => console.log(...args);
 
-// CORS: support env-configured origin for production (e.g. Vercel domain)
 const corsOrigins: (string | RegExp)[] = [
   'http://localhost:5173',
   'http://localhost:5174',
@@ -13,23 +16,26 @@ const corsOrigins: (string | RegExp)[] = [
   /\.railway\.app$/,
   /\.onrender\.com$/,
 ];
-if (process.env.CORS_ORIGIN) {
-  corsOrigins.push(process.env.CORS_ORIGIN);
-}
+if (process.env.CORS_ORIGIN) corsOrigins.push(process.env.CORS_ORIGIN);
 
 app.use(cors({ origin: corsOrigins, credentials: true }));
 
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
-  cors: {
-    origin: corsOrigins,
-    methods: ['GET', 'POST'],
-    credentials: true,
-  }
+  cors: { origin: corsOrigins, methods: ['GET', 'POST'], credentials: true },
+  transports: ['websocket'],
+  pingInterval: 20_000,
+  pingTimeout: 10_000,
+  maxHttpBufferSize: 16 * 1024,
+  perMessageDeflate: {
+    threshold: 128,
+    zlibDeflateOptions: { level: 6 },
+    clientNoContextTakeover: true,
+    serverNoContextTakeover: true,
+  },
 });
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 type Language = 'en' | 'zh' | 'es' | 'fr' | 'ja' | 'ko' | 'de' | 'pt' | 'ru' | 'ar' | 'any';
 
 interface WaitingUser {
@@ -46,29 +52,38 @@ interface Room {
   createdAt: number;
 }
 
-// ─── Rate Limiting ────────────────────────────────────────────────────────────
-const msgTimestamps = new Map<string, number[]>();    // IP → message timestamps
-const queueTimestamps = new Map<string, number[]>();  // IP → join_queue timestamps
+const msgTimestamps = new Map<string, number[]>();
+const queueTimestamps = new Map<string, number[]>();
 
 function isRateLimited(map: Map<string, number[]>, ip: string, limit: number): boolean {
   const now = Date.now();
   const windowMs = 60_000;
   const timestamps = (map.get(ip) || []).filter(t => now - t < windowMs);
-  if (timestamps.length >= limit) {
-    map.set(ip, timestamps);
-    return true;
-  }
+  if (timestamps.length >= limit) { map.set(ip, timestamps); return true; }
   timestamps.push(now);
   map.set(ip, timestamps);
   return false;
 }
 
-// ─── State (in-memory, no DB) ─────────────────────────────────────────────────
-const waitingQueue: WaitingUser[] = [];    // users waiting for match
-const rooms = new Map<string, Room>();      // roomId → Room
-const socketToRoom = new Map<string, string>(); // socketId → roomId
+// Clean rate limit maps every 5 min to prevent memory leak
+setInterval(() => {
+  const cutoff = Date.now() - 60_000;
+  for (const [ip, ts] of msgTimestamps) {
+    const fresh = ts.filter(t => t > cutoff);
+    if (fresh.length === 0) msgTimestamps.delete(ip);
+    else msgTimestamps.set(ip, fresh);
+  }
+  for (const [ip, ts] of queueTimestamps) {
+    const fresh = ts.filter(t => t > cutoff);
+    if (fresh.length === 0) queueTimestamps.delete(ip);
+    else queueTimestamps.set(ip, fresh);
+  }
+}, 5 * 60_000).unref();
 
-// ─── Queue Cleanup: remove stale waiting users every 30s ──────────────────────
+const waitingQueue: WaitingUser[] = [];
+const rooms = new Map<string, Room>();
+const socketToRoom = new Map<string, string>();
+
 const QUEUE_TIMEOUT_MS = 30_000;
 setInterval(() => {
   const now = Date.now();
@@ -80,12 +95,9 @@ setInterval(() => {
       waitingQueue.splice(i, 1);
     }
   }
-  if (waitingQueue.length !== before) {
-    console.log(`[QUEUE] cleanup: ${before} → ${waitingQueue.length}`);
-  }
-}, 30_000);
+  if (waitingQueue.length !== before) log(`[QUEUE] cleanup: ${before} → ${waitingQueue.length}`);
+}, 30_000).unref();
 
-// ─── Matching Logic ───────────────────────────────────────────────────────────
 function findMatch(socketId: string, language: Language): WaitingUser | null {
   const idx = waitingQueue.findIndex(u =>
     u.socketId !== socketId &&
@@ -112,45 +124,38 @@ function createRoom(userA: string, userB: string, language: Language): Room {
 
 function queueByLanguage(): Record<string, number> {
   const result: Record<string, number> = {};
-  for (const u of waitingQueue) {
-    result[u.language] = (result[u.language] || 0) + 1;
-  }
+  for (const u of waitingQueue) result[u.language] = (result[u.language] || 0) + 1;
   return result;
 }
 
-// ─── Socket Events ────────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
-  console.log(`[CONN] ${socket.id} connected`);
+  log(`[CONN] ${socket.id}`);
 
   socket.on('join_queue', ({ language }: { language: Language }) => {
     const ip = socket.handshake.address;
     if (isRateLimited(queueTimestamps, ip, 10)) return;
     const lang: Language = language || 'any';
     removeFromQueue(socket.id);
-
     const match = findMatch(socket.id, lang);
     if (match) {
       const matchedLang = lang === 'any' ? match.language : lang;
       const room = createRoom(socket.id, match.socketId, matchedLang);
       socket.join(room.id);
       io.sockets.sockets.get(match.socketId)?.join(room.id);
-
       io.to(room.id).emit('matched', { roomId: room.id, language: room.language });
-      console.log(`[MATCH] ${socket.id} <-> ${match.socketId} → room ${room.id} (lang: ${room.language})`);
+      log(`[MATCH] ${socket.id} <-> ${match.socketId} room=${room.id} lang=${room.language}`);
     } else {
       waitingQueue.push({ socketId: socket.id, language: lang, joinedAt: Date.now() });
       socket.emit('waiting', { position: waitingQueue.length });
-      console.log(`[QUEUE] ${socket.id} joined (lang: ${lang}, queue size: ${waitingQueue.length})`);
+      log(`[QUEUE] ${socket.id} lang=${lang} size=${waitingQueue.length}`);
     }
   });
 
   socket.on('message', ({ roomId, text }: { roomId: string; text: string }) => {
     const ip = socket.handshake.address;
     if (isRateLimited(msgTimestamps, ip, 60)) return;
-    const room = rooms.get(roomId);
-    if (!room) return;
-    const trimmed = text.slice(0, 1000);
-    console.log(`[MSG]   room ${roomId}: ${trimmed.length} chars`);
+    if (!rooms.has(roomId)) return;
+    const trimmed = (text as string).slice(0, 500);
     socket.to(roomId).emit('message', { text: trimmed, ts: Date.now() });
   });
 
@@ -161,18 +166,18 @@ io.on('connection', (socket) => {
   socket.on('leave_room', ({ roomId }: { roomId: string }) => {
     const room = rooms.get(roomId);
     if (room) {
-      console.log(`[LEAVE] ${socket.id} left room ${roomId}`);
       socket.to(roomId).emit('partner_left');
       rooms.delete(roomId);
       socketToRoom.delete(room.userA);
       socketToRoom.delete(room.userB);
+      log(`[LEAVE] ${socket.id} room=${roomId}`);
     }
   });
 
   socket.on('disconnect', () => {
     const inQueue = removeFromQueue(socket.id);
     const roomId = socketToRoom.get(socket.id);
-    console.log(`[DC]    ${socket.id} disconnected (was in room: ${roomId ?? 'none'} / in queue: ${inQueue})`);
+    log(`[DC] ${socket.id} room=${roomId ?? 'none'} queue=${inQueue}`);
     if (roomId) {
       socket.to(roomId).emit('partner_left');
       const room = rooms.get(roomId);
@@ -185,7 +190,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// ─── Health check ─────────────────────────────────────────────────────────────
 import type { Request, Response } from 'express';
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
@@ -198,22 +202,14 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 const PORT = process.env.PORT || 3002;
-const server = httpServer.listen(PORT, () => console.log(`[Drift] Server running on :${PORT}`));
+const server = httpServer.listen(PORT, () => console.log(`[Drift] :${PORT} (${isProd ? 'prod' : 'dev'})`));
 
-// ─── Graceful Shutdown ────────────────────────────────────────────────────────
 function shutdown(signal: string) {
-  console.log(`[Drift] ${signal} received — shutting down gracefully`);
-  // Notify all connected users before closing
+  console.log(`[Drift] ${signal} — shutting down`);
   io.emit('partner_left');
-  io.close(() => {
-    server.close(() => {
-      console.log('[Drift] Server closed');
-      process.exit(0);
-    });
-  });
-  // Force exit after 10s if connections linger
+  io.close(() => server.close(() => { console.log('[Drift] closed'); process.exit(0); }));
   setTimeout(() => process.exit(1), 10_000).unref();
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGINT',  () => shutdown('SIGINT'));

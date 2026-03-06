@@ -34,6 +34,7 @@ interface ChatActions {
 export function useSocket(): { state: ChatState; actions: ChatActions } {
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentRef = useRef<number>(0);   // throttle typing events
   
   const [state, setState] = useState<ChatState>({
     status: 'landing',
@@ -126,6 +127,7 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
       console.log('[Drift Client] Socket connecting to:', SOCKET_URL, 'env:', import.meta.env);
       socketRef.current = io(SOCKET_URL, {
         autoConnect: false,
+        transports: ['websocket'],  // skip HTTP polling
       });
     }
 
@@ -205,19 +207,22 @@ export function useSocket(): { state: ChatState; actions: ChatActions } {
 
   const setTyping = useCallback((isTyping: boolean) => {
     if (!socketRef.current || !state.roomId) return;
-    
+
+    const now = Date.now();
+    // Throttle: only send 'isTyping=true' every 500ms to cut event spam
+    if (isTyping && now - lastTypingSentRef.current < 500) return;
+    lastTypingSentRef.current = now;
+
     socketRef.current.emit('typing', { roomId: state.roomId, isTyping });
-    
-    // Debounce: auto-send stop typing after 1.5s
+
+    // Auto-send stop-typing after 2s of silence
     if (isTyping) {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
         if (socketRef.current && state.roomId) {
           socketRef.current.emit('typing', { roomId: state.roomId, isTyping: false });
         }
-      }, 1500);
+      }, 2000);
     }
   }, [state.roomId]);
 
