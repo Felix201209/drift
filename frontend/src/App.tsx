@@ -27,7 +27,7 @@ export interface ChatActions {
   changeLanguage: () => void;
 }
 
-function Landing({ onStart }: { onStart: () => void }) {
+function Landing({ onStart, onAbout }: { onStart: () => void; onAbout: () => void }) {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20 overflow-hidden">
       
@@ -150,6 +150,14 @@ function Landing({ onStart }: { onStart: () => void }) {
       <div className="absolute bottom-6 right-8 text-xs text-white/10 font-light z-10">
         v0.1
       </div>
+
+      {/* Bottom Left About */}
+      <button
+        onClick={onAbout}
+        className="absolute bottom-6 left-8 text-xs text-white/15 hover:text-white/40 font-light tracking-widest uppercase transition-colors z-10"
+      >
+        about
+      </button>
     </div>
   );
 }
@@ -532,12 +540,85 @@ function Disconnected({ onReset, onHome, onChangeLanguage }: { onReset: () => vo
   );
 }
 
+
+function About({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="relative flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20 px-6">
+      {/* Top bar */}
+      <div className="absolute top-6 left-8 font-light tracking-widest text-sm text-white/80 z-10">
+        drift
+      </div>
+      <button
+        onClick={onBack}
+        className="absolute top-6 right-8 text-xs text-white/20 hover:text-white/60 tracking-widest uppercase transition-colors z-10"
+      >
+        ← back
+      </button>
+
+      {/* Content */}
+      <div className="max-w-sm w-full flex flex-col gap-8" style={{ animation: 'fade-in 0.8s ease-out forwards' }}>
+        {/* Title */}
+        <div>
+          <h2 className="text-2xl font-thin tracking-[0.2em] text-white/90 mb-2">about drift</h2>
+          <div className="w-8 h-px bg-white/20"></div>
+        </div>
+
+        {/* Who made it */}
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-white/30 uppercase tracking-widest">made by</p>
+          <p className="text-sm text-white/70 font-light">Felix Yu (于朋正)</p>
+          <p className="text-xs text-white/30 font-light leading-relaxed">
+            A place for one honest conversation with a stranger — no accounts, no history, no trace.
+          </p>
+        </div>
+
+        {/* License */}
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-white/30 uppercase tracking-widest">license</p>
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-white/50 hover:text-white/80 transition-colors font-light"
+          >
+            CC BY 4.0 — Creative Commons Attribution 4.0 International
+          </a>
+          <p className="text-xs text-white/20 font-light">
+            Free to share and adapt with attribution.
+          </p>
+        </div>
+
+        {/* Source */}
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-white/30 uppercase tracking-widest">source code</p>
+          <a
+            href="https://github.com/Felix201209/drift"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-white/50 hover:text-white/80 transition-colors font-light break-all"
+          >
+            github.com/Felix201209/drift
+          </a>
+        </div>
+
+        {/* Version */}
+        <div className="pt-4 border-t border-white/5">
+          <p className="text-xs text-white/15 font-light">v0.1 · one conversation. then gone.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { state, actions } = useSocket();
+  const [showAbout, setShowAbout] = React.useState(false);
+
+  if (showAbout) return <About onBack={() => setShowAbout(false)} />;
 
   switch (state.status) {
     case 'landing':
-      return <FadeIn key="landing"><Landing onStart={actions.startDrifting} /></FadeIn>;
+      return <FadeIn key="landing"><Landing onStart={actions.startDrifting} onAbout={() => setShowAbout(true)} /></FadeIn>;
     case 'waking_up':
       return <FadeIn key="waking"><WakingUp /></FadeIn>;
     case 'selecting_language':
