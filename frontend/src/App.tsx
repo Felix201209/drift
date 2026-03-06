@@ -27,7 +27,7 @@ export interface ChatActions {
   changeLanguage: () => void;
 }
 
-function Landing({ onStart, onAbout }: { onStart: () => void; onAbout: () => void }) {
+function Landing({ onStart }: { onStart: () => void }) {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-dvh bg-[#0a0a0a] text-white selection:bg-white/20 overflow-hidden">
       
@@ -146,18 +146,30 @@ function Landing({ onStart, onAbout }: { onStart: () => void; onAbout: () => voi
         </div>
       </div>
 
-      {/* Bottom Right Version */}
-      <div className="absolute bottom-6 right-8 text-xs text-white/10 font-light z-10">
-        v0.1
+      {/* Bottom — version + credits, same opacity as v0.1 */}
+      <div className="absolute bottom-6 left-0 right-0 flex items-center justify-between px-8 z-10">
+        <span className="text-xs text-white/10 font-light">
+          by{' '}
+          <a
+            href="https://github.com/Felix201209/drift"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white/25 transition-colors"
+          >
+            Felix Yu
+          </a>
+          {' '}·{' '}
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white/25 transition-colors"
+          >
+            CC BY 4.0
+          </a>
+        </span>
+        <span className="text-xs text-white/10 font-light">v0.1</span>
       </div>
-
-      {/* Bottom Left About */}
-      <button
-        onClick={onAbout}
-        className="absolute bottom-6 left-8 text-xs text-white/15 hover:text-white/40 font-light tracking-widest uppercase transition-colors z-10"
-      >
-        about
-      </button>
     </div>
   );
 }
@@ -612,13 +624,9 @@ function About({ onBack }: { onBack: () => void }) {
 
 export default function App() {
   const { state, actions } = useSocket();
-  const [showAbout, setShowAbout] = React.useState(false);
-
-  if (showAbout) return <About onBack={() => setShowAbout(false)} />;
-
   switch (state.status) {
     case 'landing':
-      return <FadeIn key="landing"><Landing onStart={actions.startDrifting} onAbout={() => setShowAbout(true)} /></FadeIn>;
+      return <FadeIn key="landing"><Landing onStart={actions.startDrifting} /></FadeIn>;
     case 'waking_up':
       return <FadeIn key="waking"><WakingUp /></FadeIn>;
     case 'selecting_language':
