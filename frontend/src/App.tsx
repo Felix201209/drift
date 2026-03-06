@@ -148,13 +148,13 @@ function Landing({ onStart }: { onStart: () => void }) {
 
       {/* Bottom — version + credits, same opacity as v0.1 */}
       <div className="absolute bottom-6 left-0 right-0 flex items-center justify-between px-8 z-10">
-        <span className="text-xs text-white/10 font-light">
+        <span className="text-xs text-white/30 font-light">
           by{' '}
           <a
             href="https://github.com/Felix201209/drift"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-white/25 transition-colors"
+            className="hover:text-white/60 transition-colors"
           >
             Felix Yu
           </a>
@@ -163,12 +163,12 @@ function Landing({ onStart }: { onStart: () => void }) {
             href="https://creativecommons.org/licenses/by/4.0/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-white/25 transition-colors"
+            className="hover:text-white/60 transition-colors"
           >
             CC BY 4.0
           </a>
         </span>
-        <span className="text-xs text-white/10 font-light">v0.1</span>
+        <span className="text-xs text-white/20 font-light">v0.1</span>
       </div>
     </div>
   );
