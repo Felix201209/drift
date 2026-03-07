@@ -471,6 +471,7 @@ app.get('/api/locale-hint', (req, res) => {
   });
 });
 
+// ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
     ok: true,

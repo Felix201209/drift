@@ -29,6 +29,11 @@ Drift now supports a real anti-bot layer for queue entry:
 - One-time human pass bound to IP + short TTL
 - Socket/IP rate limits for connect / queue / message / typing
 
+## Locale Detection
+
+Drift now exposes `/api/locale-hint` and auto-switches the interface to Chinese when the request country resolves to `CN` (for example via `cf-ipcountry` or `x-vercel-ip-country`).
+If geo headers are missing, it falls back to the browser language.
+
 ### Environment Variables
 
 **Frontend**
